@@ -111,6 +111,26 @@ namespace CameraControl.Core.Scripting
                         canonRb.ReleaseButton();
                         return "";
                     }
+                // Start/stop the camera's own live view on TFT/HDMI (Evf_OutputDevice=Camera,
+                // NOT PC) -> lights up the HDMI capture feed like the physical Live View
+                // button, without a PC stream/overlay/UILock. For auto-starting live view
+                // after a cold boot (booth self-recovery, no red-button press needed).
+                case "startlv":
+                    {
+                        var canonSl = device as CanonSDKBase;
+                        if (canonSl == null)
+                            return "Not a Canon camera";
+                        canonSl.StartCameraLiveViewTft();
+                        return "";
+                    }
+                case "stoplv":
+                    {
+                        var canonSp = device as CanonSDKBase;
+                        if (canonSp == null)
+                            return "Not a Canon camera";
+                        canonSp.StopCameraLiveViewTft();
+                        return "";
+                    }
                 default:
                     ServiceProvider.WindowsManager.ExecuteCommand(args[0]);
                     // cammand with _ are special commands 

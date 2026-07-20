@@ -1315,6 +1315,28 @@ namespace CameraControl.Devices.Canon
             Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
         }
 
+        // Start the camera's OWN live view on the TFT/HDMI output (Evf_OutputDevice =
+        // Camera/TFT, NOT PC/Host) — the software equivalent of pressing the physical
+        // Live View button. Lights up the HDMI feed for a capture card WITHOUT streaming
+        // to the PC, so there is NO dcc window, NO PC info overlay and NO UILock/"BUSY"
+        // (EDSDK: UILock is set only when PC-ONLY is the output device). Purpose: after a
+        // cold boot the 250D isn't in live view (black HDMI) until someone presses the
+        // red button; this lets the booth start it itself. Whether the 250D accepts a
+        // TFT-only start over an active USB session (vs. HDMI/USB being mutually
+        // exclusive) is body-specific and must be rig-verified. Reachable as: do startlv.
+        public void StartCameraLiveViewTft()
+        {
+            ResetShutterButton();
+            Camera.IsInLiveViewMode = true;                     // Evf_Mode = 1 (must be set first)
+            Camera.LiveViewDevice = EosLiveViewDevice.Camera;   // Evf_OutputDevice = TFT (1), no Host/PC
+        }
+
+        public void StopCameraLiveViewTft()
+        {
+            Camera.LiveViewDevice = EosLiveViewDevice.None;     // Evf_OutputDevice = 0 (feed off)
+            Camera.IsInLiveViewMode = false;                    // Evf_Mode = 0
+        }
+
 
         public override void CapturePhotoNoAf()
         {

@@ -1300,6 +1300,16 @@ namespace CameraControl.Devices.Canon
            Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton,(int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
         }
 
+        // Half-press WITHOUT autofocus (photometry only). Wakes the exposure meter so a
+        // flash-recognising body (e.g. EOS 250D) drops exposure simulation and shows a
+        // normal-brightness live view, without moving focus (booth lens is on MF) and
+        // without taking a picture. Reachable via the web/CLI as: do halfpress.
+        public void PressHalfButtonNoAf()
+        {
+            Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
+            ErrorCodes.GetCanonException(Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_Halfway_NonAF));
+        }
+
 
         public override void CapturePhotoNoAf()
         {

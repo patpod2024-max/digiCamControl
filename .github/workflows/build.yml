@@ -1,0 +1,45 @@
+name: build-halfpress
+
+on:
+  push:
+    branches: [ halfpress ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: NuGet restore (solution)
+        run: nuget restore CameraControl.sln
+
+      - name: Build CameraControl.Core (Release x86, pulls Devices)
+        continue-on-error: true
+        run: msbuild CameraControl.Core\CameraControl.Core.csproj /p:Configuration=Release /p:Platform=x86 /m /verbosity:minimal
+
+      - name: Collect patched DLLs
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          $core = Get-ChildItem -Recurse -Filter CameraControl.Core.dll    | Where-Object { $_.FullName -match '\\bin\\' -and $_.FullName -match 'Release' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $dev  = Get-ChildItem -Recurse -Filter CameraControl.Devices.dll | Where-Object { $_.FullName -match '\\bin\\' -and $_.FullName -match 'Release' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $core) { throw 'CameraControl.Core.dll not found - build failed early' }
+          if (-not $dev)  { throw 'CameraControl.Devices.dll not found - build failed early' }
+          Copy-Item $core.FullName out\
+          Copy-Item $dev.FullName  out\
+          Write-Host ("Core:    " + $core.FullName)
+          Write-Host ("Devices: " + $dev.FullName)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dcc-halfpress-dlls
+          path: out/

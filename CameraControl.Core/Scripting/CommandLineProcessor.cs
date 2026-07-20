@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CameraControl.Core.Classes;
 using CameraControl.Devices;
+using CameraControl.Devices.Canon;
 using CameraControl.Devices.Classes;
 
 namespace CameraControl.Core.Scripting
@@ -90,6 +91,26 @@ namespace CameraControl.Core.Scripting
                 case "stoprecord":
                     return CameraHelper.StopRecordVideo(device);
                     break;
+                // Half-press without AF (photometry only) -> wakes the meter so a
+                // flash-recognising Canon shows a bright live view. Special command that
+                // talks to the device directly (like startrecord), NOT via the window
+                // broadcast, so it works without an open live view window.
+                case "halfpress":
+                    {
+                        var canonHp = device as CanonSDKBase;
+                        if (canonHp == null)
+                            return "Not a Canon camera";
+                        canonHp.PressHalfButtonNoAf();
+                        return "";
+                    }
+                case "releasebutton":
+                    {
+                        var canonRb = device as CanonSDKBase;
+                        if (canonRb == null)
+                            return "Not a Canon camera";
+                        canonRb.ReleaseButton();
+                        return "";
+                    }
                 default:
                     ServiceProvider.WindowsManager.ExecuteCommand(args[0]);
                     // cammand with _ are special commands 

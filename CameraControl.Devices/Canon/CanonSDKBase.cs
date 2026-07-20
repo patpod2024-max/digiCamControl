@@ -1311,7 +1311,7 @@ namespace CameraControl.Devices.Canon
         {
             Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
             ErrorCodes.GetCanonException(Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_Halfway_NonAF));
-            System.Threading.Thread.Sleep(120);
+            System.Threading.Thread.Sleep(400);
             Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
         }
 

@@ -1431,8 +1431,12 @@ namespace CameraControl.Devices.Canon
             var after = Camera.GetProperty(Edsdk.PropID_AFMode);
             string name;
             if (!_focusModeTable.TryGetValue((uint)after, out name)) name = "?";
-            return "vorher: " + before + " | gewuenscht: " + mode + " | jetzt: " + after +
-                   " (" + name + ")" + (after == mode ? " -> UEBERNOMMEN" : " -> NICHT uebernommen") +
+            // Antwort beginnt mit OK/FAIL, damit die Box sie eindeutig auswerten kann
+            // (slc-Konvention: "OK..." = Erfolg) und ein Mensch sie trotzdem lesen kann.
+            return (after == mode ? "OK " : "FAIL ") +
+                   "gewuenscht: " + mode + " | jetzt: " + after + " (" + name + ")" +
+                   " | vorher: " + before +
+                   (after == mode ? "" : " - steht der Schalter am Objektiv auf AF?") +
                    (err.Length > 0 ? " | Fehler: " + err : "");
         }
 

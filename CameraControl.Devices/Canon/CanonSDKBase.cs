@@ -1394,13 +1394,40 @@ namespace CameraControl.Devices.Canon
                 catch (Exception ex) { focusError = ex.Message; }
             }
 
-            try { Camera.SetProperty(Edsdk.PropID_AFMode, 3); }   // zurueck auf Manual Focus
-            catch { /* best effort - der Ausgangszustand zaehlt mehr als die Meldung */ }
+            // NUR zuruecksetzen, wenn wir den Modus vorher wirklich geaendert haben.
+            // Frueher lief das bedingungslos - und schrieb der Kamera damit ein
+            // AFMode=Manual ein, das sie festhielt, sodass der Schalter am Objektiv
+            // wirkungslos wurde (Patrick 2026-08-30). Nie einen Zustand schreiben, den
+            // man nicht selbst herbeigefuehrt hat.
+            if (after != before)
+            {
+                try { Camera.SetProperty(Edsdk.PropID_AFMode, before); }
+                catch { /* best effort */ }
+            }
 
             return "vorher: " + before + " | nach dem Umschalten: " + after +
                    (after == 0 ? " -> AF aktiv, scharfgestellt" : " -> UMSCHALTEN IGNORIERT") +
                    (setError.Length > 0 ? " | SetProperty-Fehler: " + setError : "") +
                    (focusError.Length > 0 ? " | AF-Fehler: " + focusError : "");
+        }
+
+        // Notnagel: schreibt den Fokusmodus explizit auf One-Shot AF zurueck. Gebraucht,
+        // nachdem ein frueherer Diagnose-Lauf der Kamera ein AFMode=Manual eingeschrieben
+        // hatte, das sie festhielt - der Schalter am Objektiv blieb dann wirkungslos.
+        // Vor dem Aufruf den Schalter am Objektiv auf AF stellen, sonst lehnt die Kamera
+        // den AF-Modus (zu Recht) ab. Reachable as: do resetaf.
+        public string ResetAfMode()
+        {
+            var before = Camera.GetProperty(Edsdk.PropID_AFMode);
+            string err = "";
+            try { Camera.SetProperty(Edsdk.PropID_AFMode, 0); }   // 0 = One-Shot AF
+            catch (Exception ex) { err = ex.Message; }
+            System.Threading.Thread.Sleep(300);
+            var after = Camera.GetProperty(Edsdk.PropID_AFMode);
+            return "vorher: " + before + " | jetzt: " + after +
+                   (after == 0 ? " -> OK, Kamera steht wieder auf One-Shot AF"
+                               : " -> NICHT uebernommen (steht der Schalter am Objektiv auf AF?)") +
+                   (err.Length > 0 ? " | Fehler: " + err : "");
         }
 
         // Faehrt den Fokusmotor einen Schritt (ohne Autofokus-Logik). Zeigt, ob die Kamera den

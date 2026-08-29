@@ -168,6 +168,13 @@ namespace CameraControl.Core.Scripting
                             return "Not a Canon camera";
                         return canonSa.ForceAfThenFocus();
                     }
+                case "resetaf":
+                    {
+                        var canonRa = device as CanonSDKBase;
+                        if (canonRa == null)
+                            return "Not a Canon camera";
+                        return canonRa.ResetAfMode();
+                    }
                 case "lensnear":
                     {
                         var canonLn = device as CanonSDKBase;

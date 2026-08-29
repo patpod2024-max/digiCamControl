@@ -1345,6 +1345,77 @@ namespace CameraControl.Devices.Canon
             Camera.SendCommand(Edsdk.CameraCommand_DoEvfAf, 0);
         }
 
+        // --- Kann Software den AF/MF-Schalter am Objektiv ueberstimmen? (Diagnose) ---
+        // Frage von Patrick 2026-08-30: den Fokus kurzzeitig per Software auf AF schalten,
+        // damit der Schalter am Objektiv auf MF bleiben kann. Die drei folgenden Befehle
+        // beantworten das AM GERAET statt am Schreibtisch - dieselbe Methode, mit der schon
+        // afpress/evfaf geklaert wurden.
+
+        // Liest, welchen Fokusmodus die Kamera meldet UND welche Werte sie ueberhaupt
+        // annehmen will (EdsGetPropertyDesc). Das ist der eigentliche Schluessel: Bietet die
+        // Kamera bei Objektiv-Schalter auf MF noch "One-Shot AF" an, laesst sich umschalten -
+        // meldet sie nur "Manual Focus", ist der Schalter eine harte Grenze.
+        // Reachable as: do afinfo (gibt Text zurueck).
+        public string GetAfModeInfo()
+        {
+            var current = Camera.GetProperty(Edsdk.PropID_AFMode);
+            var allowed = GetSettingsList(Edsdk.PropID_AFMode);
+            var names = new System.Text.StringBuilder();
+            foreach (var v in allowed)
+            {
+                string name;
+                if (!_focusModeTable.TryGetValue((uint)v, out name)) name = "?";
+                if (names.Length > 0) names.Append(", ");
+                names.Append(v).Append("=").Append(name);
+            }
+            string curName;
+            if (!_focusModeTable.TryGetValue((uint)current, out curName)) curName = "?";
+            return "AFMode jetzt: " + current + " (" + curName + ") | Kamera erlaubt: " +
+                   (names.Length == 0 ? "NICHTS (Liste leer)" : names.ToString());
+        }
+
+        // Patricks Idee direkt umgesetzt: kurz auf One-Shot AF schalten, scharfstellen,
+        // zurueck auf Manual Focus. Meldet, was die Kamera nach dem Umschalten TATSAECHLICH
+        // als Modus fuehrt - nur so laesst sich ein stillschweigend ignoriertes SetProperty
+        // von einem echten Wechsel unterscheiden. Reachable as: do setaf (gibt Text zurueck).
+        public string ForceAfThenFocus()
+        {
+            var before = Camera.GetProperty(Edsdk.PropID_AFMode);
+            string setError = "";
+            try { Camera.SetProperty(Edsdk.PropID_AFMode, 0); }   // 0 = One-Shot AF
+            catch (Exception ex) { setError = ex.Message; }
+            System.Threading.Thread.Sleep(300);
+            var after = Camera.GetProperty(Edsdk.PropID_AFMode);
+
+            string focusError = "";
+            if (after == 0)
+            {
+                try { PressHalfButtonAf(); }
+                catch (Exception ex) { focusError = ex.Message; }
+            }
+
+            try { Camera.SetProperty(Edsdk.PropID_AFMode, 3); }   // zurueck auf Manual Focus
+            catch { /* best effort - der Ausgangszustand zaehlt mehr als die Meldung */ }
+
+            return "vorher: " + before + " | nach dem Umschalten: " + after +
+                   (after == 0 ? " -> AF aktiv, scharfgestellt" : " -> UMSCHALTEN IGNORIERT") +
+                   (setError.Length > 0 ? " | SetProperty-Fehler: " + setError : "") +
+                   (focusError.Length > 0 ? " | AF-Fehler: " + focusError : "");
+        }
+
+        // Faehrt den Fokusmotor einen Schritt (ohne Autofokus-Logik). Zeigt, ob die Kamera den
+        // Motor bei MF-Schalterstellung ueberhaupt noch antreiben darf - bei einem STM-Objektiv
+        // ist der Fokusring elektrisch, der Motor koennte also theoretisch erreichbar sein.
+        // Reachable as: do lensnear / do lensfar.
+        public string DriveLensStep(bool near)
+        {
+            var res = Camera.SendCommand(Edsdk.CameraCommand_DriveLensEvf,
+                (int)(near ? Edsdk.EvfDriveLens_Near2 : Edsdk.EvfDriveLens_Far2));
+            return res == Edsdk.EDS_ERR_OK
+                ? "Motorbefehl angenommen (res=OK) - am Objektiv pruefen, ob er WIRKLICH gefahren ist"
+                : "Motorbefehl abgelehnt, Fehlercode 0x" + res.ToString("X");
+        }
+
         // Start the camera's OWN live view on the TFT/HDMI output (Evf_OutputDevice =
         // Camera/TFT, NOT PC/Host) — the software equivalent of pressing the physical
         // Live View button. Lights up the HDMI feed for a capture card WITHOUT streaming

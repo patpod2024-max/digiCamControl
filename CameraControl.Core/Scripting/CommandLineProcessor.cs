@@ -151,6 +151,37 @@ namespace CameraControl.Core.Scripting
                         canonEvf.DoEvfAutoFocus();
                         return "";
                     }
+                // Diagnose: Laesst sich der AF/MF-Schalter am Objektiv per Software ueberstimmen?
+                // Geben absichtlich TEXT zurueck (nicht ""), damit die Antwort im Browser/
+                // Test-Knopf direkt lesbar ist.
+                case "afinfo":
+                    {
+                        var canonAi = device as CanonSDKBase;
+                        if (canonAi == null)
+                            return "Not a Canon camera";
+                        return canonAi.GetAfModeInfo();
+                    }
+                case "setaf":
+                    {
+                        var canonSa = device as CanonSDKBase;
+                        if (canonSa == null)
+                            return "Not a Canon camera";
+                        return canonSa.ForceAfThenFocus();
+                    }
+                case "lensnear":
+                    {
+                        var canonLn = device as CanonSDKBase;
+                        if (canonLn == null)
+                            return "Not a Canon camera";
+                        return canonLn.DriveLensStep(true);
+                    }
+                case "lensfar":
+                    {
+                        var canonLf = device as CanonSDKBase;
+                        if (canonLf == null)
+                            return "Not a Canon camera";
+                        return canonLf.DriveLensStep(false);
+                    }
                 default:
                     ServiceProvider.WindowsManager.ExecuteCommand(args[0]);
                     // cammand with _ are special commands 

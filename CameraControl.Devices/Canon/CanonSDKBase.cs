@@ -1315,6 +1315,36 @@ namespace CameraControl.Devices.Canon
             Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
         }
 
+        // Half-press WITH autofocus, as a PULSE (press -> hold -> release). The counterpart
+        // of PressHalfButtonNoAf: same command, but WITHOUT the 0x00010000 "suppress AF"
+        // bit, so the body actually drives the lens. Purpose: let the operator focus the
+        // booth from where the GUESTS stand (wireless presenter -> booth -> this command),
+        // instead of needing a second person at the camera to tap the shutter. Held ~1.2 s
+        // because AF needs time to rack the lens and confirm (the NonAF pulse only has to
+        // wake the meter, so 400 ms is enough there); released afterwards so the camera
+        // does not sit "BUSY" with an info overlay on the HDMI feed.
+        // Requires the lens switch to be on AF - on MF the Canon firmware ignores any AF
+        // command (hardware switch, not software-overridable). Reachable as: do afpress.
+        public void PressHalfButtonAf()
+        {
+            Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
+            ErrorCodes.GetCanonException(Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_Halfway));
+            System.Threading.Thread.Sleep(1200);
+            Camera.SendCommand(Edsdk.CameraCommand_PressShutterButton, (int)Edsdk.EdsShutterButton.CameraCommand_ShutterButton_OFF);
+        }
+
+        // Autofocus via the live-view AF command instead of the shutter button. Canon's
+        // documented way to focus WHILE in live view; kept as a second, independent path
+        // because it is unverified whether a TFT-only (non-PC) live view accepts DoEvfAf -
+        // shipping both means one rig session decides which one works, with no second build.
+        // Reachable as: do evfaf.
+        public void DoEvfAutoFocus()
+        {
+            ErrorCodes.GetCanonException(Camera.SendCommand(Edsdk.CameraCommand_DoEvfAf, 1));
+            System.Threading.Thread.Sleep(1200);
+            Camera.SendCommand(Edsdk.CameraCommand_DoEvfAf, 0);
+        }
+
         // Start the camera's OWN live view on the TFT/HDMI output (Evf_OutputDevice =
         // Camera/TFT, NOT PC/Host) — the software equivalent of pressing the physical
         // Live View button. Lights up the HDMI feed for a capture card WITHOUT streaming

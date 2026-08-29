@@ -131,6 +131,26 @@ namespace CameraControl.Core.Scripting
                         canonSp.StopCameraLiveViewTft();
                         return "";
                     }
+                // Autofocus on demand, two independent paths (see CanonSDKBase). Lets an
+                // operator standing WHERE THE GUESTS STAND focus the booth by remote,
+                // instead of needing a second person to tap the shutter at the camera.
+                // Needs the lens switch on AF; on MF the firmware ignores it (hardware).
+                case "afpress":
+                    {
+                        var canonAf = device as CanonSDKBase;
+                        if (canonAf == null)
+                            return "Not a Canon camera";
+                        canonAf.PressHalfButtonAf();
+                        return "";
+                    }
+                case "evfaf":
+                    {
+                        var canonEvf = device as CanonSDKBase;
+                        if (canonEvf == null)
+                            return "Not a Canon camera";
+                        canonEvf.DoEvfAutoFocus();
+                        return "";
+                    }
                 default:
                     ServiceProvider.WindowsManager.ExecuteCommand(args[0]);
                     // cammand with _ are special commands 

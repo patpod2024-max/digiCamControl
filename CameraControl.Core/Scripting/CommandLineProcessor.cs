@@ -168,6 +168,17 @@ namespace CameraControl.Core.Scripting
                             return "Not a Canon camera";
                         return canonSa.ForceAfThenFocus();
                     }
+                // do afmode <0..3> - Fokusmodus explizit setzen (0=One-Shot AF, 3=Manual Focus).
+                case "afmode":
+                    {
+                        var canonAm = device as CanonSDKBase;
+                        if (canonAm == null)
+                            return "Not a Canon camera";
+                        int mode;
+                        if (args.Length < 2 || !int.TryParse((args[1] ?? "").Trim(), out mode) || mode < 0 || mode > 3)
+                            return "Bitte 'do afmode <0..3>' angeben (0=One-Shot AF, 3=Manual Focus)";
+                        return canonAm.SetAfMode(mode);
+                    }
                 case "resetaf":
                     {
                         var canonRa = device as CanonSDKBase;

@@ -1411,6 +1411,31 @@ namespace CameraControl.Devices.Canon
                    (focusError.Length > 0 ? " | AF-Fehler: " + focusError : "");
         }
 
+        // Setzt den Fokusmodus explizit auf einen Wert (0=One-Shot AF ... 3=Manual Focus)
+        // und meldet, was die Kamera danach TATSAECHLICH fuehrt.
+        //
+        // Der Grund, warum das interessant ist (Patricks Rig-Fund 2026-08-30): Die Richtung
+        // AF -> Manual nimmt die 250D per Software AN, obwohl der Schalter am Objektiv auf AF
+        // steht - und dann verschwindet auch der AF-Kasten aus dem HDMI-Bild. Nur die Richtung
+        // MF-Schalter -> AF laesst sie nicht zu. Wenn also der Schalter dauerhaft auf AF bleibt
+        // und die Box den Modus per Software fuehrt, koennte sie beides haben: im Betrieb
+        // Manual (kein Kasten, kein Nachfokussieren) und zum Scharfstellen kurz One-Shot AF.
+        // Reachable as: do afmode <0..3>.
+        public string SetAfMode(int mode)
+        {
+            var before = Camera.GetProperty(Edsdk.PropID_AFMode);
+            string err = "";
+            try { Camera.SetProperty(Edsdk.PropID_AFMode, mode); }
+            catch (Exception ex) { err = ex.Message; }
+            System.Threading.Thread.Sleep(300);
+            var after = Camera.GetProperty(Edsdk.PropID_AFMode);
+            string name;
+            if (!_focusModeTable.TryGetValue((uint)after, out name)) name = "?";
+            return "vorher: " + before + " | gewuenscht: " + mode + " | jetzt: " + after +
+                   " (" + name + ")" + (after == mode ? " -> UEBERNOMMEN" : " -> NICHT uebernommen") +
+                   (err.Length > 0 ? " | Fehler: " + err : "");
+        }
+
         // Notnagel: schreibt den Fokusmodus explizit auf One-Shot AF zurueck. Gebraucht,
         // nachdem ein frueherer Diagnose-Lauf der Kamera ein AFMode=Manual eingeschrieben
         // hatte, das sie festhielt - der Schalter am Objektiv blieb dann wirkungslos.

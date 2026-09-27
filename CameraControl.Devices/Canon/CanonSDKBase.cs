@@ -1357,7 +1357,9 @@ namespace CameraControl.Devices.Canon
         // meldet sie nur "Manual Focus", ist der Schalter eine harte Grenze.
         // Reachable as: do afinfo (gibt Text zurueck).
         // Liest Moduswahlrad (AEMode) und Ein-Schalter (FixedMovie = Video-Stellung) direkt
-        // von der Kamera. Antwort maschinenlesbar, z.B. "OK aemode=3 fixedmovie=0 record=0".
+        // von der Kamera. Antwort maschinenlesbar, z.B. "OK aemode=3 fixedmovie=0 record=0 evfmode=1".
+        // evfmode: 250D meldet 2 NUR bei Schalter auf Video, sonst 1 (KAMERA-CHECK-4, 2026-09-27) -
+        // record=3 kommt dagegen auch bei ON, sobald das Live-Bild laeuft.
         // Nicht unterstuetzte Werte kommen als "-" statt die ganze Abfrage scheitern zu lassen.
         // AEMode: 3 = M, 20 = Movie, 22 = A+, 25 = SCN, 29-35 = Kreativfilter.
         // Reachable as: do caminfo.
@@ -1365,7 +1367,8 @@ namespace CameraControl.Devices.Canon
         {
             return "OK aemode=" + ReadRawProp(Edsdk.PropID_AEMode) +
                    " fixedmovie=" + ReadRawProp(0x01000422) +
-                   " record=" + ReadRawProp(Edsdk.PropID_Record);
+                   " record=" + ReadRawProp(Edsdk.PropID_Record) +
+                   " evfmode=" + ReadRawProp(Edsdk.PropID_Evf_Mode);
         }
 
         // Liest jede PropID_* aus dem EDSDK-Wrapper plus den undokumentierten Bereich 0x01000400-0x0100047F.

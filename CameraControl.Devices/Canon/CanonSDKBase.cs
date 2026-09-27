@@ -1368,6 +1368,29 @@ namespace CameraControl.Devices.Canon
                    " record=" + ReadRawProp(Edsdk.PropID_Record);
         }
 
+        // Liest jede PropID_* aus dem EDSDK-Wrapper plus den undokumentierten Bereich 0x01000400-0x0100047F.
+        // Nur lesbare Zahlenwerte, "name=wert" durch Leerzeichen getrennt. Reachable as: do camdump.
+        public string GetCamDump()
+        {
+            var sb = new StringBuilder("OK");
+            var seen = new HashSet<uint>();
+            foreach (var f in typeof(Edsdk).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            {
+                if (!f.Name.StartsWith("PropID_") || f.FieldType != typeof(uint)) continue;
+                var id = (uint)f.GetValue(null);
+                if (!seen.Add(id)) continue;
+                var v = ReadRawProp(id);
+                if (v != "-") sb.Append(" ").Append(f.Name.Substring(7)).Append("=").Append(v);
+            }
+            for (uint id = 0x01000400; id < 0x01000480; id++)
+            {
+                if (!seen.Add(id)) continue;
+                var v = ReadRawProp(id);
+                if (v != "-") sb.Append(" x").Append(id.ToString("X8")).Append("=").Append(v);
+            }
+            return sb.ToString();
+        }
+
         private string ReadRawProp(uint id)
         {
             try { return Camera.GetProperty(id).ToString(); }

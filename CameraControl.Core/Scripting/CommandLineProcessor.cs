@@ -164,6 +164,15 @@ namespace CameraControl.Core.Scripting
                             return "Not a Canon camera";
                         return canonCi.GetCamInfo();
                     }
+                // do camdump - Diagnose: ALLE lesbaren Zahlen-Eigenschaften der Kamera auf einmal
+                // (zum Vergleich zweier Schalterstellungen, z.B. ON mit Live-Bild vs. Video).
+                case "camdump":
+                    {
+                        var canonCd = device as CanonSDKBase;
+                        if (canonCd == null)
+                            return "Not a Canon camera";
+                        return canonCd.GetCamDump();
+                    }
                 case "afinfo":
                     {
                         var canonAi = device as CanonSDKBase;

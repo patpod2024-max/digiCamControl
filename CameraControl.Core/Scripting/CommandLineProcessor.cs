@@ -154,6 +154,16 @@ namespace CameraControl.Core.Scripting
                 // Diagnose: Laesst sich der AF/MF-Schalter am Objektiv per Software ueberstimmen?
                 // Geben absichtlich TEXT zurueck (nicht ""), damit die Antwort im Browser/
                 // Test-Knopf direkt lesbar ist.
+                // do caminfo - rohe Stellung von Moduswahlrad + Ein-Schalter, FRISCH von der
+                // Kamera gelesen (nicht aus dem dcc-Zwischenspeicher). Fuer den Kamera-Waechter
+                // der Fotobox: dcc meldet bei SW/A+/Video sonst weiter den alten Modus.
+                case "caminfo":
+                    {
+                        var canonCi = device as CanonSDKBase;
+                        if (canonCi == null)
+                            return "Not a Canon camera";
+                        return canonCi.GetCamInfo();
+                    }
                 case "afinfo":
                     {
                         var canonAi = device as CanonSDKBase;

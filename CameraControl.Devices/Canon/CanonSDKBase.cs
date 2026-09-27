@@ -1356,6 +1356,24 @@ namespace CameraControl.Devices.Canon
         // Kamera bei Objektiv-Schalter auf MF noch "One-Shot AF" an, laesst sich umschalten -
         // meldet sie nur "Manual Focus", ist der Schalter eine harte Grenze.
         // Reachable as: do afinfo (gibt Text zurueck).
+        // Liest Moduswahlrad (AEMode) und Ein-Schalter (FixedMovie = Video-Stellung) direkt
+        // von der Kamera. Antwort maschinenlesbar, z.B. "OK aemode=3 fixedmovie=0 record=0".
+        // Nicht unterstuetzte Werte kommen als "-" statt die ganze Abfrage scheitern zu lassen.
+        // AEMode: 3 = M, 20 = Movie, 22 = A+, 25 = SCN, 29-35 = Kreativfilter.
+        // Reachable as: do caminfo.
+        public string GetCamInfo()
+        {
+            return "OK aemode=" + ReadRawProp(Edsdk.PropID_AEMode) +
+                   " fixedmovie=" + ReadRawProp(0x01000422) +
+                   " record=" + ReadRawProp(Edsdk.PropID_Record);
+        }
+
+        private string ReadRawProp(uint id)
+        {
+            try { return Camera.GetProperty(id).ToString(); }
+            catch { return "-"; }
+        }
+
         public string GetAfModeInfo()
         {
             var current = Camera.GetProperty(Edsdk.PropID_AFMode);
